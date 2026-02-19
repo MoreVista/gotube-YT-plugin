@@ -78,11 +78,11 @@ Invidious.Search = function (keyword, page) {
 };
 
 Invidious.play = function (id) {
-    var videoUrl = "";
-    var apiUrl = INSTANCE_URL + "/api/v1/videos/" + id;
-    
+    // APIから動画情報を取得 (local=trueでプロキシURLを要求)
+    var apiUrl = INSTANCE_URL + "/api/v1/videos/" + id + "?local=true";
     var jsonString = GetContents(apiUrl);
-    
+    var videoUrl = "";
+
     if (jsonString) {
         var data;
         try {
@@ -91,29 +91,43 @@ Invidious.play = function (id) {
             return "";
         }
 
+        // フォーマット済みストリーム（結合済みファイル）から探す
         if (data && data.formatStreams) {
             var streams = data.formatStreams;
-            
-            // PSPに適したストリームを探す (MP4 コンテナ, 解像度360p付近)
             for (var i = 0; i < streams.length; i++) {
                 var s = streams[i];
-                var container = s.container || "";
-                var resolution = s.resolution || "";
-
-                // MP4を探す
-                if (container.toLowerCase().indexOf("mp4") !== -1) {
-                    // 360pが見つかればそれを優先してループを抜ける
-                    if (resolution.indexOf("360p") !== -1) {
-                        videoUrl = s.url;
+                // itag 18 (360p MP4) を最優先
+                if (s.itag == 18) {
+                    videoUrl = s.url;
+                    break;
+                }
+            }
+            // なければ最初のMP4を使う
+            if (videoUrl == "") {
+                for (var i = 0; i < streams.length; i++) {
+                    if (streams[i].container == "mp4") {
+                        videoUrl = streams[i].url;
                         break;
-                    }
-                    // 360p以外でもとりあえずMP4なら保持しておく（720pだとPSPで再生できない可能性あり）
-                    if (videoUrl === "") {
-                        videoUrl = s.url;
                     }
                 }
             }
         }
+    }
+
+    // 【ここが修正ポイント】URLの補完処理
+    if (videoUrl != "") {
+        // 1. もしURLが「/」で始まっていたら、サーバーのURLをくっつけて完全なURLにする
+        if (videoUrl.charAt(0) == '/') {
+            videoUrl = INSTANCE_URL + videoUrl;
+        }
+
+        // 2. もしURLが https:// で始まっていたら http:// に直す（念のため）
+        if (videoUrl.indexOf("https://") == 0) {
+            videoUrl = "http://" + videoUrl.substring(8);
+        }
+
+        // 3. GoTubeに動画ファイルだと認識させるための偽装拡張子
+        videoUrl = videoUrl + "&ext=.mp4";
     }
     
     return videoUrl;
