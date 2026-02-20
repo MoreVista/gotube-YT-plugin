@@ -4,4 +4,4 @@ Youtube plugin for Gotube (PSP Media Player) on 2026
 ## gotube-invidious-plugin.js
 Use invidious to load data. Search works but videos won't load.
 ## YT2009.js
-Searching works and videos can be played, but you need to open the video on your computer before it will load on your PSP.
+Use YT2008 to load videos. Searching works and videos can be played, but you need to open the video on your computer before it will load on your PSP.
