@@ -1,9 +1,10 @@
 var YT2009 = new Object();
-YT2009.rev = 6;
-YT2009.SearchDesc = "YT2009 (FLV Mode)";
+YT2009.rev = 9;
+YT2009.SearchDesc = "YT2009 (Full Preload)";
 YT2009.Name = "YT2009";
 
 // 【重要】YT2009インスタンスのURL (末尾の「/」はなし)
+//[Important] YT2009 instance URL (without the trailing "/")
 var INSTANCE_URL = "http://192.168.2.12:8080"; 
 
 // ヘルパー関数
@@ -27,12 +28,12 @@ YT2009.Search = function (keyword, page) {
         keyword = keyword.substring(1);
     }
 
-    // デバッグ用通信テスト
+    // デバッグ用
     if (keyword == "test") {
         result.VideoInfo = new Array();
         var v = { attr: 2, id: "test" };
         v.Title = "Connection Test";
-        var check = GetContents(INSTANCE_URL + "/feeds/api/videos?q=test&max-results=1&v=2");
+        var check = GetContents(INSTANCE_URL + "/get_video_info?video_id=test");
         if (check && check.length > 0) {
             v.Description = "OK: Connected";
         } else {
@@ -45,7 +46,6 @@ YT2009.Search = function (keyword, page) {
         return result;
     }
 
-    // 検索API呼び出し
     var apiUrl = INSTANCE_URL + '/feeds/api/videos?q=' + escape(keyword) + 
                  '&start-index=' + result.start + 
                  '&max-results=' + result.bypage + 
@@ -57,7 +57,6 @@ YT2009.Search = function (keyword, page) {
     
     if (xml) {
         var entries = xml.split("<entry>");
-        
         for (var i = 1; i < entries.length; i++) {
             var entry = entries[i];
             var v = { attr: 2 };
@@ -77,6 +76,7 @@ YT2009.Search = function (keyword, page) {
             v.Description = "Author: " + author;
             v.ThumbnailURL = 'http://i.ytimg.com/vi/' + v.id + '/hqdefault.jpg';
             
+            // FLVとして保存
             v.SaveFilename = v.id + ".flv";
             
             v.URL = 'YT2009.play("' + v.id + '")';
@@ -100,12 +100,19 @@ YT2009.Search = function (keyword, page) {
     return result;
 };
 
+
 YT2009.play = function (id) {
-    // 事前ロード 
-    var watchUrl = INSTANCE_URL + "/watch?v=" + id;
-    var dummy = GetContents(watchUrl);
     
-    // サーバーに送るURL
+    //ページ生成トリガー
+        var url1 = INSTANCE_URL + "/watch?v=" + id;
+
+
+    // 動画生成トリガー
+
+        var url2 = INSTANCE_URL + "/get_video?video_id=" + id;
+
+    
+    // 本読み込み
     return INSTANCE_URL + "/assets/" + id + ".flv";
 };
 
